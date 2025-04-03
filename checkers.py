@@ -128,8 +128,40 @@ class Game:
 
 	def terminate_game(self):
 		"""Quits the program and ends the game."""
-		pygame.quit()
-		sys.exit()
+		# Determine winner
+		winner = RED if self.turn == BLUE else BLUE
+		
+		# Show winner dialog and get player's choice
+		play_again = False
+		if hasattr(self, 'winner_announced') and self.winner_announced:
+			# If we've already shown the winner dialog, just quit
+			pygame.quit()
+			sys.exit()
+		else:
+			# Otherwise, show dialog and get user's choice
+			from main import show_winner  # Import here to avoid circular imports
+			play_again = show_winner(self.graphics.screen, winner)
+			
+			if play_again:
+				# Reset the game for a new round
+				self.board = Board()
+				self.endit = False
+				self.turn = BLUE
+				self.selected_piece = None
+				self.hop = False
+				self.winner_announced = False
+				self.selected_legal_moves = []
+				
+				# This is the key part - restart the game loop if we're not in loop_mode
+				if not self.loop_mode:
+					self.main()  # Restart the main game loop
+				
+				# If in loop_mode, just return and let the main.py handle restarting
+				return
+			else:
+				# Quit if player chose not to play again
+				pygame.quit()
+				sys.exit()
 
 	def main(self):
 		""""This executes the game and controls its flow."""
@@ -157,13 +189,26 @@ class Game:
 			if self.turn == BLUE:
 				print('RED WINS!')
 				self.graphics.draw_message("RED WINS!")
+				self.winner_announced = True
 			else:
 				print('BLUE WINS!')
 				self.graphics.draw_message("BLUE WINS!")
-			print(self.turn)
-			if(self.loop_mode):
+				self.winner_announced = True
+				
+			if self.loop_mode:
 				self.endit = True
 			else:
+				# Wait for player to acknowledge the win message before showing options
+				waiting_for_click = True
+				while waiting_for_click:
+					for event in pygame.event.get():
+						if event.type == pygame.QUIT:
+							pygame.quit()
+							sys.exit()
+						if event.type == pygame.MOUSEBUTTONDOWN:
+							waiting_for_click = False
+				
+				# Now proceed to terminate_game to show play again options
 				self.terminate_game()
 
 	def check_for_endgame(self):
@@ -264,14 +309,53 @@ class Graphics:
 
 	def draw_message(self, message):
 		"""
-		Draws message to the screen.
+		Draws an attractive modal dialog announcing the winner
 		"""
-		print("in here")
 		self.message = True
-		self.font_obj = pygame.font.Font('freesansbold.ttf', 44)
-		self.text_surface_obj = self.font_obj.render(message, True, HIGH, BLACK)
+		
+		# Create a semi-transparent overlay for the modal background
+		overlay = pygame.Surface((self.window_size, self.window_size), pygame.SRCALPHA)
+		overlay.fill((0, 0, 0, 180))  # Semi-transparent black
+		self.screen.blit(overlay, (0, 0))
+		
+		# Create the modal box
+		modal_width, modal_height = 400, 250
+		modal_rect = pygame.Rect(
+			(self.window_size - modal_width) // 2,
+			(self.window_size - modal_height) // 2,
+			modal_width, modal_height
+		)
+		
+		# Determine the winner color for styling
+		if message == "RED WINS!":
+			box_color = RED
+		elif message == "BLUE WINS!":
+			box_color = BLUE
+		else:
+			box_color = GOLD
+		
+		# Draw modal background with border
+		pygame.draw.rect(self.screen, WHITE, modal_rect, border_radius=15)
+		pygame.draw.rect(self.screen, box_color, modal_rect, width=5, border_radius=15)
+		
+		# Create main message text
+		self.font_obj = pygame.font.Font('freesansbold.ttf', 48)
+		self.text_surface_obj = self.font_obj.render(message, True, box_color)
 		self.text_rect_obj = self.text_surface_obj.get_rect()
-		self.text_rect_obj.center = (self.window_size // 2, self.window_size // 2)
+		self.text_rect_obj.center = (self.window_size // 2, self.window_size // 2 - 30)
+		
+		# Create "Click to continue" text
+		font_small = pygame.font.Font('freesansbold.ttf', 20)
+		continue_text = font_small.render("Click here to quit", True, BLACK)
+		continue_rect = continue_text.get_rect()
+		continue_rect.center = (self.window_size // 2, self.window_size // 2 + 40)
+		
+		# Draw texts
+		self.screen.blit(self.text_surface_obj, self.text_rect_obj)
+		self.screen.blit(continue_text, continue_rect)
+		
+		# Update display to show modal
+		pygame.display.update()
 
 class Board:
 	def __init__(self):

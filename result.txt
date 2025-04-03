@@ -1,0 +1,33 @@
+CHECKERS GAME LOGS
+=================
+
+
+New Game: Blue (Human) vs Level 1 AI
+-----------------------------------------
+Move 1: Red Bot (Level 1) explored 0 nodes
+Move 2: Red Bot (Level 1) explored 0 nodes
+Move 3: Red Bot (Level 1) explored 0 nodes
+Move 4: Red Bot (Level 1) explored 0 nodes
+Move 5: Red Bot (Level 1) explored 0 nodes
+Move 6: Red Bot (Level 1) explored 0 nodes
+Move 7: Red Bot (Level 1) explored 0 nodes
+Move 8: Red Bot (Level 1) explored 0 nodes
+Move 9: Red Bot (Level 1) explored 0 nodes
+Move 10: Red Bot (Level 1) explored 0 nodes
+Move 11: Red Bot (Level 1) explored 0 nodes
+Move 12: Red Bot (Level 1) explored 0 nodes
+Move 13: Red Bot (Level 1) explored 0 nodes
+Move 14: Red Bot (Level 1) explored 0 nodes
+Move 15: Red Bot (Level 1) explored 0 nodes
+Move 16: Red Bot (Level 1) explored 0 nodes
+Move 17: Red Bot (Level 1) explored 0 nodes
+Move 18: Red Bot (Level 1) explored 0 nodes
+Move 19: Red Bot (Level 1) explored 0 nodes
+Move 20: Red Bot (Level 1) explored 0 nodes
+Move 21: Red Bot (Level 1) explored 0 nodes
+Move 22: Red Bot (Level 1) explored 0 nodes
+Move 23: Red Bot (Level 1) explored 0 nodes
+Move 24: Red Bot (Level 1) explored 0 nodes
+Move 25: Red Bot (Level 1) explored 0 nodes
+Move 26: Red Bot (Level 1) explored 0 nodes
+Move 27: Red Bot (Level 1) explored 0 nodes
