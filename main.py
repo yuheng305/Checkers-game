@@ -536,14 +536,24 @@ def main():
                 # Log game end
                 winner = getattr(game, 'winner', None)
                 if winner is None:
-                    red_pieces = sum(row.count(RED) for row in game.board)
-                    blue_pieces = sum(row.count(BLUE) for row in game.board)
-                    if red_pieces > blue_pieces:
-                        winner = RED
-                    elif blue_pieces > red_pieces:
+                    # Check if a player has no legal moves
+                    red_moves = game.get_possible_moves(RED)
+                    blue_moves = game.get_possible_moves(BLUE)
+                    
+                    if not red_moves:  # Red has no moves
                         winner = BLUE
+                    elif not blue_moves:  # Blue has no moves
+                        winner = RED
                     else:
-                        winner = None
+                        # Fall back to counting pieces
+                        red_pieces = sum(row.count(RED) for row in game.board)
+                        blue_pieces = sum(row.count(BLUE) for row in game.board)
+                        if red_pieces > blue_pieces:
+                            winner = RED
+                        elif blue_pieces > red_pieces:
+                            winner = BLUE
+                        else:
+                            winner = None
                         
                 # Log the winner
                 if winner == RED:
