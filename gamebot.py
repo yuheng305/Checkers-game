@@ -7,7 +7,6 @@ import math
 from time import sleep
 pygame.font.init()
 
-
 ##COLORS##
 #             R    G    B
 WHITE = (255, 255, 255)
@@ -22,7 +21,6 @@ NORTHWEST = "northwest"
 NORTHEAST = "northeast"
 SOUTHWEST = "southwest"
 SOUTHEAST = "southeast"
-
 
 class Bot:
     def __init__(self, game, color, method='random', mid_eval=None, end_eval=None, depth=1):
@@ -53,6 +51,24 @@ class Bot:
         self._end_eval_time = False
         self._count_nodes = 0
 
+        # Mở file output.txt để ghi lại các nước đi
+        try:
+            self.log_file = open("output.txt", "a", encoding="utf-8")
+            self.log_file.write(f"\n\n=== BẮT ĐẦU TRẬN ĐẤU MỚI ===\n")
+            self.log_file.write(f"Bot {'Đỏ' if color == RED else 'Xanh'} sử dụng phương pháp: {method}, độ sâu: {depth}\n\n")
+            self.log_file.flush()  # Đảm bảo nội dung được ghi ngay lập tức
+        except:
+            print("Không thể mở file output.txt để ghi log")
+            self.log_file = None
+
+    def __del__(self):
+        """Đóng file log khi đối tượng Bot bị hủy"""
+        if hasattr(self, 'log_file') and self.log_file:
+            try:
+                self.log_file.close()
+            except:
+                pass
+
     def step(self, board, return_count_nodes=False):
         self._count_nodes = 0
         if(self._end_eval is not None and self._end_eval_time == False):
@@ -72,48 +88,71 @@ class Bot:
     def _action(self, current_pos, final_pos, board):
         if current_pos is None:
             self.game.end_turn()
-            # board.repr_matrix()
-            # print(self._generate_all_possible_moves(board))
-        # print(current_pos, final_pos, board.location(current_pos[0], current_pos[1]).occupant)
+            return
+            
+        player = f"Bot {'Đỏ' if self.game.turn == RED else 'Xanh'}"
+        
         if self.game.hop == False:
             if board.location(final_pos[0], final_pos[1]).occupant != None and board.location(final_pos[0], final_pos[1]).occupant.color == self.game.turn:
                 current_pos = final_pos
-
             elif current_pos != None and final_pos in board.legal_moves(current_pos[0], current_pos[1]):
-
-                board.move_piece(
-                    current_pos[0], current_pos[1], final_pos[0], final_pos[1])
-
+                move_text = f"{player} di chuyển: ({current_pos[0]}, {current_pos[1]}) -> ({final_pos[0]}, {final_pos[1]})"
+                print(move_text)
+                
+                # Ghi nước đi vào file
+                if hasattr(self, 'log_file') and self.log_file:
+                    self.log_file.write(move_text + "\n")
+                    self.log_file.flush()
+                    
+                board.move_piece(current_pos[0], current_pos[1], final_pos[0], final_pos[1])
                 if final_pos not in board.adjacent(current_pos[0], current_pos[1]):
-                    board.remove_piece(current_pos[0] + (final_pos[0] - current_pos[0]) //
-                                       2, current_pos[1] + (final_pos[1] - current_pos[1]) // 2)
-
+                    capture_text = f"{player} ăn quân tại ({current_pos[0] + (final_pos[0] - current_pos[0]) // 2}, {current_pos[1] + (final_pos[1] - current_pos[1]) // 2})"
+                    print(capture_text)
+                    
+                    # Ghi thông tin ăn quân vào file
+                    if hasattr(self, 'log_file') and self.log_file:
+                        self.log_file.write(capture_text + "\n")
+                        self.log_file.flush()
+                        
+                    board.remove_piece(current_pos[0] + (final_pos[0] - current_pos[0]) // 2, current_pos[1] + (final_pos[1] - current_pos[1]) // 2)
                     self.game.hop = True
                     current_pos = final_pos
-                    final_pos = board.legal_moves(
-                        current_pos[0], current_pos[1], True)
+                    final_pos = board.legal_moves(current_pos[0], current_pos[1], True)
                     if final_pos != []:
-                        # print("HOP in Action", current_pos, final_pos)
                         self._action(current_pos, final_pos[0], board)
                     self.game.end_turn()
-
+        
         if self.game.hop == True:
             if current_pos != None and final_pos in board.legal_moves(current_pos[0], current_pos[1], self.game.hop):
-                board.move_piece(
-                    current_pos[0], current_pos[1], final_pos[0], final_pos[1])
-                board.remove_piece(current_pos[0] + (final_pos[0] - current_pos[0]) //
-                                   2, current_pos[1] + (final_pos[1] - current_pos[1]) // 2)
-
+                hop_text = f"{player} nhảy tiếp: ({current_pos[0]}, {current_pos[1]}) -> ({final_pos[0]}, {final_pos[1]})"
+                print(hop_text)
+                
+                # Ghi thông tin nhảy tiếp vào file
+                if hasattr(self, 'log_file') and self.log_file:
+                    self.log_file.write(hop_text + "\n")
+                    self.log_file.flush()
+                    
+                board.move_piece(current_pos[0], current_pos[1], final_pos[0], final_pos[1])
+                
+                capture_text = f"{player} ăn quân tại ({current_pos[0] + (final_pos[0] - current_pos[0]) // 2}, {current_pos[1] + (final_pos[1] - current_pos[1]) // 2})"
+                print(capture_text)
+                
+                # Ghi thông tin ăn quân vào file
+                if hasattr(self, 'log_file') and self.log_file:
+                    self.log_file.write(capture_text + "\n")
+                    self.log_file.flush()
+                    
+                board.remove_piece(current_pos[0] + (final_pos[0] - current_pos[0]) // 2, current_pos[1] + (final_pos[1] - current_pos[1]) // 2)
+            
             if board.legal_moves(final_pos[0], final_pos[1], self.game.hop) == []:
                 self.game.end_turn()
             else:
                 current_pos = final_pos
-                final_pos = board.legal_moves(
-                    current_pos[0], current_pos[1], True)
+                final_pos = board.legal_moves(current_pos[0], current_pos[1], True)
                 if final_pos != []:
-                    # print("HOP in Action", current_pos, final_pos)
                     self._action(current_pos, final_pos[0], board)
                 self.game.end_turn()
+        
         if self.game.hop != True:
             self.game.turn = self.adversary_color
 
@@ -121,36 +160,26 @@ class Bot:
         if hop == False:
             if board.location(final_pos[0], final_pos[1]).occupant != None and board.location(final_pos[0], final_pos[1]).occupant.color == self.game.turn:
                 current_pos = final_pos
-
             elif current_pos != None and final_pos in board.legal_moves(current_pos[0], current_pos[1]):
-
-                board.move_piece(
-                    current_pos[0], current_pos[1], final_pos[0], final_pos[1])
-
+                board.move_piece(current_pos[0], current_pos[1], final_pos[0], final_pos[1])
                 if final_pos not in board.adjacent(current_pos[0], current_pos[1]):
-                    # print("REMOVE", current_pos, final_pos)
-                    board.remove_piece(current_pos[0] + (final_pos[0] - current_pos[0]) //
-                                       2, current_pos[1] + (final_pos[1] - current_pos[1]) // 2)
+                    board.remove_piece(current_pos[0] + (final_pos[0] - current_pos[0]) // 2, current_pos[1] + (final_pos[1] - current_pos[1]) // 2)
                     hop = True
                     current_pos = final_pos
                     final_pos = board.legal_moves(current_pos[0], current_pos[1], True)
                     if final_pos != []:
-                        # print("HOP in Action", current_pos, final_pos)
-                        self._action_on_board(board, current_pos, final_pos[0],hop=True)
+                        self._action_on_board(board, current_pos, final_pos[0], hop=True)
         else:
-            # print(current_pos, final_pos)
             if current_pos != None and final_pos in board.legal_moves(current_pos[0], current_pos[1], hop):
                 board.move_piece(current_pos[0], current_pos[1], final_pos[0], final_pos[1])
                 board.remove_piece(current_pos[0] + (final_pos[0] - current_pos[0]) // 2, current_pos[1] + (final_pos[1] - current_pos[1]) // 2)
-
             if board.legal_moves(final_pos[0], final_pos[1], self.game.hop) == []:
                 return
             else:
                 current_pos = final_pos
                 final_pos = board.legal_moves(current_pos[0], current_pos[1], True)
                 if final_pos != []:
-                    # print("HOP in Action", current_pos, final_pos)
-                    self._action_on_board(board, current_pos, final_pos[0],hop=True)
+                    self._action_on_board(board, current_pos, final_pos[0], hop=True)
 
     def _generate_move(self, board):
         for i in range(8):
@@ -163,8 +192,7 @@ class Bot:
         for i in range(8):
             for j in range(8):
                 if(board.legal_moves(i, j, self.game.hop) != [] and board.location(i, j).occupant != None and board.location(i, j).occupant.color == self.game.turn):
-                    possible_moves.append(
-                        (i, j, board.legal_moves(i, j, self.game.hop)))
+                    possible_moves.append((i, j, board.legal_moves(i, j, self.game.hop)))
         return possible_moves
 
     def _random_step(self, board):
@@ -178,16 +206,13 @@ class Bot:
         return
 
     def _minmax_step(self, board):
-        random_move, random_choice, _ = self._minmax(
-            self.depth - 1, board, 'max')
+        random_move, random_choice, _ = self._minmax(self.depth - 1, board, 'max')
         self._action(random_move, random_choice, board)
         return
 
     def _alpha_beta_step(self, board):
         random_move, random_choice, _ = self._alpha_beta(self.depth - 1, board, 'max', alpha=-float('inf'), beta=float('inf'))
-        # print(self.eval_color, self.game.turn, self.game.hop)
         self._action(random_move, random_choice, board)
-        # print(self.eval_color, self.game.turn, self.game.hop)
         return
 
     def _minmax(self, depth, board, fn):
@@ -206,7 +231,6 @@ class Bot:
                         step_value = self._current_eval(board_clone)
                         self.color, self.adversary_color = self.adversary_color, self.color
                         self.game.turn = self.color
-
                         if step_value > max_value:
                             max_value = step_value
                             best_pos = pos
@@ -215,7 +239,7 @@ class Bot:
                             max_value = step_value
                             best_pos = (pos[0], pos[1])
                             best_action = (action[0], action[1])
-                        if(step_value == -float("inf") and best_pos is  None):
+                        if(step_value == -float("inf") and best_pos is None):
                             best_pos = (pos[0], pos[1])
                             best_action = (action[0], action[1])
                 return best_pos, best_action, max_value
@@ -241,7 +265,7 @@ class Bot:
                             min_value = step_value
                             best_pos = pos
                             best_action = action
-                        if(step_value == float("inf") and best_pos is  None):
+                        if(step_value == float("inf") and best_pos is None):
                             best_pos = (pos[0], pos[1])
                             best_action = (action[0], action[1])
                 return best_pos, best_action, min_value
@@ -263,10 +287,8 @@ class Bot:
                             _, _, step_value = self._minmax(depth - 1, board_clone, 'min')
                         self.color, self.adversary_color = self.adversary_color, self.color
                         self.game.turn = self.color
-                        # print('POS', (pos[0], pos[1]), 'ACK', action, 'MAX', depth, step_value)
                         if(step_value is None):
                             continue
-                        # print('max->', depth, step_value, (pos[0], pos[1]), action, self.color)
                         if step_value > max_value:
                             max_value = step_value
                             best_pos = pos
@@ -275,7 +297,7 @@ class Bot:
                             max_value = step_value
                             best_pos = pos
                             best_action = action
-                        if(step_value == -float("inf") and best_pos is  None):
+                        if(step_value == -float("inf") and best_pos is None):
                             best_pos = (pos[0], pos[1])
                             best_action = (action[0], action[1])
                 return best_pos, best_action, max_value
@@ -286,7 +308,6 @@ class Bot:
                 for pos in self._generate_move(board):
                     for action in pos[2]:
                         board_clone = deepcopy(board)
-                        # print('POS', (pos[0], pos[1]), 'ACK', action, 'MIN', depth)
                         self.color, self.adversary_color = self.adversary_color, self.color
                         self.game.turn = self.color
                         self._count_nodes += 1
@@ -294,7 +315,7 @@ class Bot:
                         if self._check_for_endgame(board_clone):
                             step_value = -float("inf")
                         else:
-                            _, _, step_value = self._minmax( depth - 1, board_clone, 'max')
+                            _, _, step_value = self._minmax(depth - 1, board_clone, 'max')
                         self.color, self.adversary_color = self.adversary_color, self.color
                         self.game.turn = self.color
                         if(step_value is None):
@@ -307,7 +328,7 @@ class Bot:
                             min_value = step_value
                             best_pos = pos
                             best_action = action
-                        if(step_value == float("inf") and best_pos is  None):
+                        if(step_value == float("inf") and best_pos is None):
                             best_pos = (pos[0], pos[1])
                             best_action = (action[0], action[1])
                 return best_pos, best_action, min_value
@@ -328,7 +349,6 @@ class Bot:
                         step_value = self._current_eval(board_clone)
                         self.color, self.adversary_color = self.adversary_color, self.color
                         self.game.turn = self.color
-                        # print('max->', depth, step_value, (pos[0], pos[1]), action, self.color)
                         if step_value > max_value:
                             max_value = step_value
                             best_pos = pos
@@ -337,15 +357,13 @@ class Bot:
                             max_value = step_value
                             best_pos = (pos[0], pos[1])
                             best_action = (action[0], action[1])
-                        if(step_value == -float("inf") and best_pos is  None):
+                        if(step_value == -float("inf") and best_pos is None):
                             best_pos = (pos[0], pos[1])
                             best_action = (action[0], action[1])
                         alpha = max(alpha, max_value)
                         if beta < alpha:
-                            # print('beta cutoff')
                             break
                     if beta < alpha:
-                        # print('beta cutoff')
                         break
                 return best_pos, best_action, max_value
             else:
@@ -357,12 +375,11 @@ class Bot:
                         board_clone = deepcopy(board)
                         self.color, self.adversary_color = self.adversary_color, self.color
                         self.game.turn = self.color
-                        self._action_on_board(board_clone, pos, action)
                         self._count_nodes += 1
+                        self._action_on_board(board_clone, pos, action)
                         step_value = self._current_eval(board_clone)
                         self.color, self.adversary_color = self.adversary_color, self.color
                         self.game.turn = self.color
-                        # print('min->', depth, step_value, (pos[0], pos[1]), action, self.color)
                         if step_value < min_value:
                             min_value = step_value
                             best_pos = pos
@@ -371,15 +388,13 @@ class Bot:
                             min_value = step_value
                             best_pos = pos
                             best_action = action
-                        if(step_value == float("inf") and best_pos is  None):
+                        if(step_value == float("inf") and best_pos is None):
                             best_pos = (pos[0], pos[1])
                             best_action = (action[0], action[1])
                         beta = min(beta, min_value)
                         if beta < alpha:
-                            # print('alpha cutoff')
                             break
                     if beta < alpha:
-                        # print('alpha cutoff')
                         break
                 return best_pos, best_action, min_value
         else:
@@ -400,10 +415,8 @@ class Bot:
                             _, _, step_value = self._alpha_beta(depth - 1, board_clone, 'min', alpha, beta)
                         self.color, self.adversary_color = self.adversary_color, self.color
                         self.game.turn = self.color
-                        # print('POS', (pos[0], pos[1]), 'ACK', action, 'MAX', depth, step_value)
                         if(step_value is None):
                             continue
-                        # print('max->', depth, step_value, (pos[0], pos[1]), action, self.color)
                         if step_value > max_value:
                             max_value = step_value
                             best_pos = pos
@@ -412,15 +425,13 @@ class Bot:
                             max_value = step_value
                             best_pos = pos
                             best_action = action
-                        if(step_value == -float("inf") and best_pos is  None):
+                        if(step_value == -float("inf") and best_pos is None):
                             best_pos = (pos[0], pos[1])
                             best_action = (action[0], action[1])
                         alpha = max(alpha, max_value)
                         if beta <= alpha:
-                            # print('beta cutoff')
                             break
                     if beta < alpha:
-                        # print('alpha cu3toff')
                         break
                 return best_pos, best_action, max_value
             else:
@@ -430,7 +441,6 @@ class Bot:
                 for pos in self._generate_move(board):
                     for action in pos[2]:
                         board_clone = deepcopy(board)
-                        # print('POS', (pos[0], pos[1]), 'ACK', action, 'MIN', depth)
                         self.color, self.adversary_color = self.adversary_color, self.color
                         self.game.turn = self.color
                         self._count_nodes += 1
@@ -438,7 +448,7 @@ class Bot:
                         if self._check_for_endgame(board_clone):
                             step_value = -float("inf")
                         else:
-                            _, _, step_value = self._alpha_beta( depth - 1, board_clone, 'max', alpha, beta)
+                            _, _, step_value = self._alpha_beta(depth - 1, board_clone, 'max', alpha, beta)
                         self.color, self.adversary_color = self.adversary_color, self.color
                         self.game.turn = self.color
                         if(step_value is None):
@@ -451,16 +461,13 @@ class Bot:
                             min_value = step_value
                             best_pos = pos
                             best_action = action
-                        # print('min->', depth, step_value, (pos[0], pos[1]), action, self.color)
-                        if(step_value == float("inf") and best_pos is  None):
+                        if(step_value == float("inf") and best_pos is None):
                             best_pos = (pos[0], pos[1])
                             best_action = (action[0], action[1])
                         beta = min(beta, min_value)
                         if beta < alpha:
-                            # print('alpha cutoff')
                             break
                     if beta < alpha:
-                        # print('alpha cutoff')
                         break
                 return best_pos, best_action, min_value
 
@@ -628,3 +635,11 @@ class Bot:
                     if board.legal_moves(x, y) != []:
                         return False
         return True
+
+    def log_game_result(self, winner):
+        """Ghi kết quả trận đấu vào file log"""
+        if hasattr(self, 'log_file') and self.log_file:
+            winner_text = f"\n=== KẾT THÚC TRẬN ĐẤU: {'ĐỎ' if winner == RED else 'XANH'} THẮNG! ===\n"
+            self.log_file.write(winner_text)
+            self.log_file.write("=" * 40 + "\n\n")
+            self.log_file.flush()
